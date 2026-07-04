@@ -1,0 +1,45 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="metal" x1="8%" y1="0%" x2="92%" y2="100%">
+      <stop offset="0%" stop-color="#fffaf0" />
+      <stop offset="42%" stop-color="#f0dba9" />
+      <stop offset="100%" stop-color="#c2924f" />
+    </linearGradient>
+
+    <linearGradient id="line" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#69b0b6" />
+      <stop offset="100%" stop-color="#274850" />
+    </linearGradient>
+  </defs>
+
+  <polyline
+    points="40,258 122,202 172,306 240,242 296,350 370,298 432,394 490,358 556,462"
+    fill="none"
+    stroke="#16262a"
+    stroke-width="32"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.28"
+  />
+  <polyline
+    points="36,252 118,196 168,300 236,236 292,344 366,292 428,388 486,352 552,456"
+    fill="none"
+    stroke="url(#line)"
+    stroke-width="32"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <g transform="translate(150,128) scale(21.5)">
+    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+          fill="url(#metal)"
+          stroke="#fff6e2" stroke-width="0.22" stroke-opacity="0.55" />
+  </g>
+
+  <g>
+    <text x="566" y="812" font-family="'Segoe UI', system-ui, sans-serif" font-weight="800"
+          font-size="222" fill="url(#metal)">¥</text>
+    <text x="804" y="812" font-family="'Segoe UI', system-ui, sans-serif" font-weight="800"
+          font-size="222" fill="url(#metal)">!</text>
+  </g>
+</svg>

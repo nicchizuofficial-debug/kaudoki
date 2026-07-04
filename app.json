@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "カウドキ！",
+    "slug": "kaudoki",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#dc7318"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kaudoki.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#dc7318"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
