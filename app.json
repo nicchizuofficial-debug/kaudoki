@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "jp.nicchizu.kaudoki"
+      "bundleIdentifier": "jp.nicchizu.kaudoki2"
     },
     "android": {
       "adaptiveIcon": {
