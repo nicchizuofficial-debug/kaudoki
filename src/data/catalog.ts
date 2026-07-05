@@ -2,8 +2,8 @@ import type { CatalogEntry } from './productFactory';
 
 function urlsFor(seed: string): CatalogEntry['urls'] {
   return {
-    amazon: `https://www.amazon.co.jp/dp/B0${seed.toUpperCase()}?tag=YOUR_ASSOCIATE_TAG-22`,
-    rakuten: `https://hb.afl.rakuten.co.jp/hgc/YOUR_AFFILIATE_ID/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fexample-shop%2F${seed}%2F`,
+    amazon: `https://www.amazon.co.jp/dp/B0${seed.toUpperCase()}?tag=nicchizu-22`,
+    rakuten: `https://hb.afl.rakuten.co.jp/hgc/55844017.6cee9c62.55844018.ab51d449/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fexample-shop%2F${seed}%2F`,
     yahoo: `https://store.shopping.yahoo.co.jp/example-shop/${seed}.html?sc_i=YOUR_VALUECOMMERCE_ID`,
   };
 }
