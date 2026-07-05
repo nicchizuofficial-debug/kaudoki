@@ -12,12 +12,30 @@ workflows:
       vars:
         XCODE_WORKSPACE: "kaudoki.xcworkspace"
         XCODE_SCHEME: "kaudoki"
+        APP_STORE_APPLE_ID: 6787644382
       node: 20.11.0
     scripts:
       - name: Install npm dependencies
         script: npm install
+      - name: Set next build number
+        script: |
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+          NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "Setting iOS build number to $NEW_BUILD_NUMBER"
+          node -e "
+            const fs = require('fs');
+            const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+            app.expo.ios = app.expo.ios || {};
+            app.expo.ios.buildNumber = '$NEW_BUILD_NUMBER';
+            fs.writeFileSync('app.json', JSON.stringify(app, null, 2));
+          "
       - name: Run Expo Prebuild
         script: npx expo prebuild --platform ios
+      - name: Set Info.plist values
+        script: |
+          PLIST=$CM_BUILD_DIR/ios/$XCODE_SCHEME/Info.plist
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || true
       - name: Install CocoaPods dependencies
         script: cd ios && pod install
       - name: Set up provisioning profiles
