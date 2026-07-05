@@ -28,8 +28,8 @@ export const AnimatedPressable: React.FC<AnimatedPressableProps> = ({
   };
 
   return (
-    <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} {...rest}>
-      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    <Pressable style={style} onPressIn={handlePressIn} onPressOut={handlePressOut} {...rest}>
+      <Animated.View style={{ transform: [{ scale }] }}>{children}</Animated.View>
     </Pressable>
   );
 };
