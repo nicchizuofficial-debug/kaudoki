@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: Codemagic
     environment:
+      groups:
+        - certificate_credentials # <-- CERTIFICATE_PRIVATE_KEY
       vars:
         BUNDLE_ID: "jp.nicchizu.kaudoki2"
         XCODE_WORKSPACE: "kaudoki.xcworkspace"
