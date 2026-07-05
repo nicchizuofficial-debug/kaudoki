@@ -31,6 +31,15 @@ workflows:
           "
       - name: Run Expo Prebuild
         script: npx expo prebuild --platform ios
+      - name: Detect generated Xcode project names
+        script: |
+          WORKSPACE_PATH=$(find "$CM_BUILD_DIR/ios" -maxdepth 1 -name "*.xcworkspace" | head -1)
+          WORKSPACE_NAME=$(basename "$WORKSPACE_PATH")
+          SCHEME_NAME="${WORKSPACE_NAME%.xcworkspace}"
+          echo "Detected workspace: $WORKSPACE_NAME"
+          echo "Detected scheme: $SCHEME_NAME"
+          echo "XCODE_WORKSPACE=$WORKSPACE_NAME" >> $CM_ENV
+          echo "XCODE_SCHEME=$SCHEME_NAME" >> $CM_ENV
       - name: Set Info.plist values
         script: |
           PLIST=$CM_BUILD_DIR/ios/$XCODE_SCHEME/Info.plist
