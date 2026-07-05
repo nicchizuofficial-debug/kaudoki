@@ -6,10 +6,8 @@ workflows:
     integrations:
       app_store_connect: codemagic
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: jp.nicchizu.kaudoki2
       vars:
+        BUNDLE_ID: "jp.nicchizu.kaudoki2"
         XCODE_WORKSPACE: "kaudoki.xcworkspace"
         XCODE_SCHEME: "kaudoki"
         APP_STORE_APPLE_ID: 6787644382
@@ -38,7 +36,16 @@ workflows:
           $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" || true
       - name: Install CocoaPods dependencies
         script: cd ios && pod install
-      - name: Set up provisioning profiles
+      - name: Set up keychain to be used for codesigning
+        script: keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+      - name: Add certificates to keychain
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Build ipa for distribution
         script: |
