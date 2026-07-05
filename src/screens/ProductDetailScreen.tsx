@@ -46,7 +46,7 @@ export const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
       bestOffer,
       avgPrice,
       deltaPct,
-      isGreatDeal: bestOffer.price <= minPrice * GREAT_DEAL_THRESHOLD,
+      isGreatDeal: priceHistory.length >= 5 && bestOffer.price <= minPrice * GREAT_DEAL_THRESHOLD,
     };
   }, [priceHistory, offers]);
 

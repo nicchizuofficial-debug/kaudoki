@@ -87,27 +87,13 @@ export function buildProduct(entry: CatalogEntry): ProductDetailData {
 }
 
 /**
- * A newly tracked product has no real price history yet, so we show a gentle
- * placeholder trend converging on today's real price until enough daily
- * checks have accumulated to plot an actual history.
+ * Builds a newly tracked product from a real Rakuten Ichiba search result.
+ * There's no history yet — it starts as a single real data point for today
+ * and grows day by day as `applyRakutenPriceUpdate` records fresh checks.
  */
-function generatePlaceholderHistory(currentPrice: number): PricePoint[] {
-  const today = new Date();
-  const history: PricePoint[] = [];
-  const amplitude = Math.max(currentPrice * 0.03, 50);
-
-  for (let daysAgo = HISTORY_DAYS - 1; daysAgo >= 0; daysAgo--) {
-    const date = new Date(today);
-    date.setDate(today.getDate() - daysAgo);
-    const price = daysAgo === 0 ? currentPrice : Math.round(currentPrice + (Math.random() - 0.5) * amplitude);
-    history.push({ date: date.toISOString().slice(0, 10), price });
-  }
-
-  return history;
-}
-
-/** Builds a tracked product from a real Rakuten Ichiba search result. */
 export function buildProductFromRakutenItem(item: RakutenSearchResult): ProductDetailData {
+  const today = new Date().toISOString().slice(0, 10);
+
   return {
     product: {
       id: `rakuten-${item.itemCode}`,
@@ -115,13 +101,44 @@ export function buildProductFromRakutenItem(item: RakutenSearchResult): ProductD
       imageUrl: item.imageUrl,
       currency: 'JPY',
     },
-    priceHistory: generatePlaceholderHistory(item.price),
+    priceHistory: [{ date: today, price: item.price }],
     offers: [
       {
         shopId: 'rakuten',
         shopName: item.shopName,
         price: item.price,
         affiliateUrl: item.itemUrl,
+        lastCheckedAt: new Date().toISOString(),
+      },
+    ],
+  };
+}
+
+/**
+ * Merges a freshly fetched Rakuten price into a tracked product's history:
+ * updates today's point if already checked today, otherwise appends a new
+ * day, keeping at most the last 30 days.
+ */
+export function applyRakutenPriceUpdate(product: ProductDetailData, fresh: RakutenSearchResult): ProductDetailData {
+  const today = new Date().toISOString().slice(0, 10);
+  const history = [...product.priceHistory];
+  const lastPoint = history[history.length - 1];
+
+  if (lastPoint?.date === today) {
+    history[history.length - 1] = { date: today, price: fresh.price };
+  } else {
+    history.push({ date: today, price: fresh.price });
+  }
+
+  return {
+    ...product,
+    priceHistory: history.slice(-HISTORY_DAYS),
+    offers: [
+      {
+        shopId: 'rakuten',
+        shopName: fresh.shopName,
+        price: fresh.price,
+        affiliateUrl: fresh.itemUrl,
         lastCheckedAt: new Date().toISOString(),
       },
     ],

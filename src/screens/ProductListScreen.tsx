@@ -30,6 +30,7 @@ function ProductRow({
 }) {
   const bestOffer = useMemo(() => getBestOffer(item), [item]);
   const isGreatDeal = useMemo(() => {
+    if (item.priceHistory.length < 5) return false;
     const minPrice = Math.min(...item.priceHistory.map((point) => point.price));
     return bestOffer.price <= minPrice * GREAT_DEAL_THRESHOLD;
   }, [item, bestOffer]);
