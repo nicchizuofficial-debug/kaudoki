@@ -58,6 +58,14 @@ workflows:
         script: keychain add-certificates
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
+      - name: DEBUG print actual bundle identifier and signing settings
+        script: |
+          echo "=== DEBUG_CHECK START ==="
+          xcodebuild -showBuildSettings \
+            -workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" 2>&1 \
+            | grep -E "PRODUCT_BUNDLE_IDENTIFIER|PROVISIONING_PROFILE|CODE_SIGN_IDENTITY|DEVELOPMENT_TEAM"
+          echo "=== DEBUG_CHECK END ==="
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
