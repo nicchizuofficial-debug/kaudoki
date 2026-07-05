@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,52 +15,41 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppHeader } from '../components/AppHeader';
 import { AnimatedPressable } from '../components/AnimatedPressable';
-import { searchCatalog } from '../data/catalog';
-import { previewPriceRange, type CatalogEntry } from '../data/productFactory';
+import { isRakutenConfigured, searchRakutenItems, type RakutenSearchResult } from '../data/rakutenSearch';
 import { cardShadow, useAppTheme, type AppTheme } from '../theme/theme';
 
 interface ProductSearchScreenProps {
   trackedIds: Set<string>;
   onBack: () => void;
-  onAddProduct: (entry: CatalogEntry) => void;
+  onAddProduct: (item: RakutenSearchResult) => void;
 }
 
-type ApiKey = 'rakuten' | 'yahoo' | 'amazon';
-
-const API_LABELS: Record<ApiKey, string> = {
-  rakuten: '楽天商品検索API',
-  yahoo: 'Yahoo!ショッピングAPI',
-  amazon: 'Amazon PA-API',
-};
-
-type Phase = 'idle' | 'searching' | 'done';
+type Phase = 'idle' | 'searching' | 'done' | 'error';
 
 function ResultRow({
-  entry,
+  item,
   theme,
   isTracked,
   onAdd,
 }: {
-  entry: CatalogEntry;
+  item: RakutenSearchResult;
   theme: AppTheme;
   isTracked: boolean;
   onAdd: () => void;
 }) {
-  const { min, max } = previewPriceRange(entry);
-
   return (
     <View style={[styles.resultCard, cardShadow(theme), { backgroundColor: theme.surface, borderColor: theme.border }]}>
-      <Image source={{ uri: entry.imageUrl }} style={styles.resultThumb} resizeMode="cover" />
+      <Image source={{ uri: item.imageUrl }} style={styles.resultThumb} resizeMode="cover" />
       <View style={styles.resultBody}>
         <Text style={[styles.resultTitle, { color: theme.primaryText }]} numberOfLines={2}>
-          {entry.title}
+          {item.title}
         </Text>
-        <Text style={[styles.resultPriceRange, { color: theme.secondaryText }]}>
-          ¥{min.toLocaleString()} 〜 ¥{max.toLocaleString()}
-        </Text>
+        <Text style={[styles.resultPrice, { color: theme.accentRed }]}>¥{item.price.toLocaleString()}</Text>
         <View style={styles.resultMetaRow}>
           <Ionicons name="storefront-outline" size={12} color={theme.mutedText} />
-          <Text style={[styles.resultMetaText, { color: theme.mutedText }]}>3ショップで比較可能</Text>
+          <Text style={[styles.resultMetaText, { color: theme.mutedText }]} numberOfLines={1}>
+            {item.shopName}（楽天市場）
+          </Text>
         </View>
       </View>
 
@@ -86,33 +75,40 @@ export const ProductSearchScreen: React.FC<ProductSearchScreenProps> = ({ tracke
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [phase, setPhase] = useState<Phase>('idle');
-  const [apiDone, setApiDone] = useState<Record<ApiKey, boolean>>({ rakuten: false, yahoo: false, amazon: false });
-  const [results, setResults] = useState<CatalogEntry[]>([]);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-
-  useEffect(() => {
-    return () => {
-      timersRef.current.forEach(clearTimeout);
-    };
-  }, []);
+  const [results, setResults] = useState<RakutenSearchResult[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (!submittedQuery) return;
 
-    timersRef.current.forEach(clearTimeout);
+    let cancelled = false;
     setPhase('searching');
-    setApiDone({ rakuten: false, yahoo: false, amazon: false });
     setResults([]);
+    setErrorMessage('');
 
-    timersRef.current = [
-      setTimeout(() => setApiDone((s) => ({ ...s, rakuten: true })), 380),
-      setTimeout(() => setApiDone((s) => ({ ...s, yahoo: true })), 640),
-      setTimeout(() => setApiDone((s) => ({ ...s, amazon: true })), 820),
-      setTimeout(() => {
-        setResults(searchCatalog(submittedQuery));
+    if (!isRakutenConfigured()) {
+      setErrorMessage(
+        '楽天ウェブサービスのアプリIDが未設定です。src/data/rakutenSearch.ts のRAKUTEN_APP_IDを設定してください。'
+      );
+      setPhase('error');
+      return;
+    }
+
+    searchRakutenItems(submittedQuery)
+      .then((items) => {
+        if (cancelled) return;
+        setResults(items);
         setPhase('done');
-      }, 900),
-    ];
+      })
+      .catch((error: Error) => {
+        if (cancelled) return;
+        setErrorMessage(error.message || '検索に失敗しました。しばらくしてから再度お試しください。');
+        setPhase('error');
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [submittedQuery]);
 
   const handleSubmit = useCallback(() => {
@@ -132,7 +128,7 @@ export const ProductSearchScreen: React.FC<ProductSearchScreenProps> = ({ tracke
             value={query}
             onChangeText={setQuery}
             onSubmitEditing={handleSubmit}
-            placeholder="商品名またはURLで検索"
+            placeholder="商品名で検索（楽天市場）"
             placeholderTextColor={theme.mutedText}
             style={[styles.searchInput, { color: theme.primaryText }]}
             returnKeyType="search"
@@ -148,26 +144,22 @@ export const ProductSearchScreen: React.FC<ProductSearchScreenProps> = ({ tracke
           <View style={styles.centerState}>
             <Ionicons name="pricetags-outline" size={40} color={theme.mutedText} />
             <Text style={[styles.centerText, { color: theme.mutedText }]}>
-              商品名や型番、ECサイトの商品URLを入力すると{'\n'}Amazon・楽天・Yahoo!ショッピングを横断検索します
+              商品名を入力すると、楽天市場の実在する商品を{'\n'}楽天商品検索APIでリアルタイムに検索します
             </Text>
           </View>
         )}
 
         {phase === 'searching' && (
-          <View style={styles.apiStatusList}>
-            {(Object.keys(API_LABELS) as ApiKey[]).map((key) => (
-              <View key={key} style={styles.apiStatusRow}>
-                {apiDone[key] ? (
-                  <Ionicons name="checkmark-circle" size={18} color={theme.goodGreen} />
-                ) : (
-                  <ActivityIndicator size="small" color={theme.seriesBlue} />
-                )}
-                <Text style={[styles.apiStatusText, { color: theme.secondaryText }]}>
-                  {API_LABELS[key]}
-                  {apiDone[key] ? 'から取得完了' : 'を検索中…'}
-                </Text>
-              </View>
-            ))}
+          <View style={styles.apiStatusRow}>
+            <ActivityIndicator size="small" color={theme.seriesBlue} />
+            <Text style={[styles.apiStatusText, { color: theme.secondaryText }]}>楽天商品検索APIで検索中…</Text>
+          </View>
+        )}
+
+        {phase === 'error' && (
+          <View style={styles.centerState}>
+            <Ionicons name="warning-outline" size={40} color={theme.accentRed} />
+            <Text style={[styles.centerText, { color: theme.mutedText }]}>{errorMessage}</Text>
           </View>
         )}
 
@@ -183,7 +175,7 @@ export const ProductSearchScreen: React.FC<ProductSearchScreenProps> = ({ tracke
         {phase === 'done' && results.length > 0 && (
           <FlatList
             data={results}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.itemCode}
             contentContainerStyle={styles.resultsList}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
@@ -191,9 +183,9 @@ export const ProductSearchScreen: React.FC<ProductSearchScreenProps> = ({ tracke
             }
             renderItem={({ item }) => (
               <ResultRow
-                entry={item}
+                item={item}
                 theme={theme}
-                isTracked={trackedIds.has(item.id)}
+                isTracked={trackedIds.has(`rakuten-${item.itemCode}`)}
                 onAdd={() => onAddProduct(item)}
               />
             )}
@@ -240,13 +232,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  apiStatusList: {
-    marginTop: 40,
-    gap: 16,
-  },
   apiStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 40,
+    justifyContent: 'center',
     gap: 10,
   },
   apiStatusText: {
@@ -282,9 +272,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 17,
   },
-  resultPriceRange: {
-    fontSize: 12,
-    fontWeight: '700',
+  resultPrice: {
+    fontSize: 15,
+    fontWeight: '800',
     marginTop: 4,
   },
   resultMetaRow: {
@@ -295,6 +285,7 @@ const styles = StyleSheet.create({
   },
   resultMetaText: {
     fontSize: 10,
+    flexShrink: 1,
   },
   addButtonWrap: {
     borderRadius: 10,

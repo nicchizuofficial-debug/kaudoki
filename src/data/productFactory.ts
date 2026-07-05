@@ -1,4 +1,5 @@
 import type { PricePoint, ProductDetailData, ShopOffer } from '../types/product';
+import type { RakutenSearchResult } from './rakutenSearch';
 
 const HISTORY_DAYS = 30;
 
@@ -85,12 +86,44 @@ export function buildProduct(entry: CatalogEntry): ProductDetailData {
   };
 }
 
-/** Preview price range shown in search results, before the full history is generated. */
-export function previewPriceRange(entry: CatalogEntry): { min: number; max: number } {
-  const prices = [
-    entry.basePrice + entry.jitters.amazon,
-    entry.basePrice + entry.jitters.rakuten,
-    entry.basePrice + entry.jitters.yahoo,
-  ];
-  return { min: Math.min(...prices), max: Math.max(...prices) };
+/**
+ * A newly tracked product has no real price history yet, so we show a gentle
+ * placeholder trend converging on today's real price until enough daily
+ * checks have accumulated to plot an actual history.
+ */
+function generatePlaceholderHistory(currentPrice: number): PricePoint[] {
+  const today = new Date();
+  const history: PricePoint[] = [];
+  const amplitude = Math.max(currentPrice * 0.03, 50);
+
+  for (let daysAgo = HISTORY_DAYS - 1; daysAgo >= 0; daysAgo--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - daysAgo);
+    const price = daysAgo === 0 ? currentPrice : Math.round(currentPrice + (Math.random() - 0.5) * amplitude);
+    history.push({ date: date.toISOString().slice(0, 10), price });
+  }
+
+  return history;
+}
+
+/** Builds a tracked product from a real Rakuten Ichiba search result. */
+export function buildProductFromRakutenItem(item: RakutenSearchResult): ProductDetailData {
+  return {
+    product: {
+      id: `rakuten-${item.itemCode}`,
+      title: item.title,
+      imageUrl: item.imageUrl,
+      currency: 'JPY',
+    },
+    priceHistory: generatePlaceholderHistory(item.price),
+    offers: [
+      {
+        shopId: 'rakuten',
+        shopName: item.shopName,
+        price: item.price,
+        affiliateUrl: item.itemUrl,
+        lastCheckedAt: new Date().toISOString(),
+      },
+    ],
+  };
 }

@@ -101,12 +101,6 @@ export const CATALOG: CatalogEntry[] = [
 
 export const DEFAULT_TRACKED_IDS: readonly string[] = ['prod_001', 'prod_002', 'prod_003'];
 
-export function searchCatalog(query: string): CatalogEntry[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  return CATALOG.filter((entry) => entry.title.toLowerCase().includes(q));
-}
-
 export function getCatalogEntry(id: string): CatalogEntry | undefined {
   return CATALOG.find((entry) => entry.id === id);
 }

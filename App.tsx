@@ -1,10 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 import { ProductListScreen } from './src/screens/ProductListScreen';
 import { ProductDetailScreen } from './src/screens/ProductDetailScreen';
 import { ProductSearchScreen } from './src/screens/ProductSearchScreen';
 import { initialProducts } from './src/data/mockProducts';
 import { getCatalogEntry } from './src/data/catalog';
-import { buildProduct, type CatalogEntry } from './src/data/productFactory';
+import { buildProduct, buildProductFromRakutenItem } from './src/data/productFactory';
+import type { RakutenSearchResult } from './src/data/rakutenSearch';
 import { ensureNotificationPermission, sendPriceAlertNotification } from './src/notifications/priceAlerts';
 import type { ProductDetailData } from './src/types/product';
 
@@ -25,9 +27,10 @@ export default function App() {
     return products.find((item) => item.product.id === screen.id) ?? null;
   }, [screen, products]);
 
-  const handleAddProduct = (entry: CatalogEntry) => {
-    if (trackedIds.has(entry.id)) return;
-    setProducts((prev) => [...prev, buildProduct(entry)]);
+  const handleAddProduct = (item: RakutenSearchResult) => {
+    const id = `rakuten-${item.itemCode}`;
+    if (trackedIds.has(id)) return;
+    setProducts((prev) => [...prev, buildProductFromRakutenItem(item)]);
   };
 
   const handleSetAlert = useCallback(
@@ -62,7 +65,10 @@ export default function App() {
   const handleRefreshPrice = useCallback(
     async (id: string) => {
       const entry = getCatalogEntry(id);
-      if (!entry) return;
+      if (!entry) {
+        Alert.alert('未対応', 'この商品は楽天商品検索APIから追加されたため、自動での価格再取得にはまだ対応していません。');
+        return;
+      }
 
       const current = products.find((item) => item.product.id === id);
       const threshold = current?.product.alertThreshold;
